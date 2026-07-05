@@ -44,23 +44,31 @@ proprietario (audit per clienti, siti propri):
   (binari precompilati arm64 → gira nativamente su Apple Silicon).
 - [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser): parsing sitemap.
 - [robots-parser](https://github.com/samclarke/robots-parser): matching robots.txt.
-- Lighthouse (Fase 3, ancora da aggiungere).
+- [Lighthouse](https://github.com/GoogleChrome/lighthouse): Core Web Vitals sul campione di pagine.
 
-## Setup su macOS (Apple Silicon)
+## Installazione
+
+### Via npm (consigliata)
 
 ```bash
-# 1. Node LTS (se usi nvm)
-nvm install --lts && nvm use --lts
+npm install -g audit-seo-tecnico
+seo-audit crawl https://tuosito.it
+```
 
-# 2. Dipendenze
+### Da sorgente (per sviluppo)
+
+```bash
+git clone https://github.com/fedec089/audit-seo-tecnico.git
+cd audit-seo-tecnico
 npm install
 
 # (opzionale) per la modalità --render serve il browser di Playwright:
 npx playwright install chromium
 ```
 
-`better-sqlite3` scarica un binario precompilato arm64: nessuna toolchain di
-compilazione necessaria.
+Richiede Node.js ≥ 20 (LTS). Testato su macOS Apple Silicon: `better-sqlite3`
+usa binari precompilati arm64, nessuna toolchain di compilazione necessaria.
+
 
 ## Uso
 

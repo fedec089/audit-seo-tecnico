@@ -25,12 +25,18 @@
   "bin": {
     "seo-audit": "bin/seo-audit.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "audit.config.example.js"
+  ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "start": "node bin/seo-audit.js",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "prepublishOnly": "npm test"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",
