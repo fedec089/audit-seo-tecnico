@@ -3,6 +3,10 @@
 > 🇬🇧 **Technical SEO audit CLI** (docs in Italian): full-site crawler, deterministic
 > rule engine (~40 checks), Lighthouse sampling and an LLM-ready JSON report.
 
+<p align="center">
+  <img src="docs/demo.svg" alt="Demo: seo-audit crawl + audit su un sito reale — sitemap ricorsiva, motore di regole e sommario delle issue" width="820">
+</p>
+
 Tool da riga di comando (Node.js, ESM) che esegue un audit SEO **tecnico** di un sito:
 crawl dell'intero sito, raccolta di dati strutturati per ogni URL, motore di regole
 deterministico per i problemi tecnici, e report JSON pronto per essere sintetizzato

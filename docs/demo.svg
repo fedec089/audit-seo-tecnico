@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="700" viewBox="0 0 820 700" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13">
+  <!-- Finestra terminale -->
+  <rect x="0" y="0" width="820" height="700" rx="12" fill="#1b1e27"/>
+  <rect x="0" y="0" width="820" height="40" rx="12" fill="#252936"/>
+  <rect x="0" y="20" width="820" height="20" fill="#252936"/>
+  <circle cx="24" cy="20" r="6" fill="#ff5f57"/>
+  <circle cx="44" cy="20" r="6" fill="#febc2e"/>
+  <circle cx="64" cy="20" r="6" fill="#28c840"/>
+  <text x="410" y="25" text-anchor="middle" fill="#8b93a7" font-size="12">seo-audit — audit SEO tecnico</text>
+
+  <!-- $ crawl -->
+  <text x="24" y="74"><tspan fill="#4ade80">$</tspan><tspan fill="#e8ecf3" font-weight="bold"> seo-audit crawl</tspan><tspan fill="#9fb3d1"> https://web-scraping.dev --max-urls 30</tspan></text>
+  <text x="24" y="94"><tspan fill="#565f73">[09:44:10]</tspan><tspan fill="#d6dae3"> Host canonico: web-scraping.dev | render=false | maxUrls=30 maxDepth=3</tspan></text>
+  <text x="24" y="113"><tspan fill="#565f73">[09:44:10]</tspan><tspan fill="#4ade80"> ✓</tspan><tspan fill="#d6dae3"> robots.txt scaricato (321 byte)</tspan></text>
+  <text x="24" y="132"><tspan fill="#565f73">[09:44:11]</tspan><tspan fill="#d6dae3"> Sitemap index: https://web-scraping.dev/sitemap-index.xml -> 50 sub-sitemap</tspan></text>
+  <text x="24" y="151"><tspan fill="#565f73">[09:44:12]</tspan><tspan fill="#d6dae3"> Sitemap: https://web-scraping.dev/sitemap-1.xml -> 101 URL</tspan></text>
+  <text x="24" y="170"><tspan fill="#565f73">[09:44:12]</tspan><tspan fill="#d6dae3"> Sitemap: https://web-scraping.dev/sitemap-2.xml -> 100 URL</tspan></text>
+  <text x="110" y="189" fill="#565f73">⋮</text>
+  <text x="24" y="208"><tspan fill="#565f73">[09:44:20]</tspan><tspan fill="#4ade80"> ✓</tspan><tspan fill="#d6dae3"> URL dichiarati in sitemap: </tspan><tspan fill="#e8ecf3" font-weight="bold">5038</tspan></text>
+  <text x="24" y="227"><tspan fill="#565f73">[09:44:20]</tspan><tspan fill="#d6dae3"> Avvio crawl con 31 seed (homepage + sitemap)...</tspan></text>
+  <text x="24" y="246"><tspan fill="#565f73">[09:44:35]</tspan><tspan fill="#4ade80"> ✓</tspan><tspan fill="#d6dae3"> Crawl completato: </tspan><tspan fill="#e8ecf3" font-weight="bold">30 URL</tspan><tspan fill="#d6dae3"> salvati in data/web-scraping.dev-…​.db</tspan></text>
+
+  <!-- $ audit -->
+  <text x="24" y="284"><tspan fill="#4ade80">$</tspan><tspan fill="#e8ecf3" font-weight="bold"> seo-audit audit</tspan></text>
+  <text x="24" y="304"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#d6dae3"> Pagine in analisi: 30</tspan></text>
+  <text x="24" y="323"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#fbbf24"> ⚠</tspan><tspan fill="#d6dae3"> Crawl limitato da --max-urls: 5123 URL in scope non crawlati</tspan></text>
+  <text x="24" y="342"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#7dd3fc"> title-duplicate</tspan><tspan fill="#d6dae3">: 28 occorrenze</tspan></text>
+  <text x="24" y="361"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#7dd3fc"> h1-missing</tspan><tspan fill="#d6dae3">: 29 occorrenze</tspan></text>
+  <text x="24" y="380"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#7dd3fc"> heading-hierarchy-skip</tspan><tspan fill="#d6dae3">: 29 occorrenze</tspan></text>
+  <text x="24" y="399"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#7dd3fc"> thin-content</tspan><tspan fill="#d6dae3">: 8 occorrenze</tspan></text>
+  <text x="24" y="418"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#7dd3fc"> img-missing-alt</tspan><tspan fill="#d6dae3">: 28 occorrenze</tspan></text>
+  <text x="24" y="437"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#7dd3fc"> low-text-html-ratio</tspan><tspan fill="#d6dae3">: 28 occorrenze</tspan></text>
+  <text x="24" y="456"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#4ade80"> ✓</tspan><tspan fill="#d6dae3"> Issue totali: </tspan><tspan fill="#e8ecf3" font-weight="bold">181</tspan></text>
+
+  <!-- Sommario a due colonne -->
+  <text x="48" y="494" fill="#8b93a7">Per severita:</text>
+  <text x="420" y="494" fill="#8b93a7">Per categoria:</text>
+  <text x="72" y="514"><tspan fill="#f87171">error</tspan></text><text x="200" y="514" fill="#e8ecf3">0</text>
+  <text x="444" y="514" fill="#d6dae3">onpage</text><text x="620" y="514" fill="#e8ecf3">115</text>
+  <text x="72" y="533"><tspan fill="#fbbf24">warning</tspan></text><text x="200" y="533" fill="#e8ecf3">122</text>
+  <text x="444" y="533" fill="#d6dae3">images</text><text x="620" y="533" fill="#e8ecf3">28</text>
+  <text x="72" y="552"><tspan fill="#60a5fa">notice</tspan></text><text x="200" y="552" fill="#e8ecf3">59</text>
+  <text x="444" y="552" fill="#d6dae3">html</text><text x="620" y="552" fill="#e8ecf3">28</text>
+  <text x="444" y="571" fill="#d6dae3">content</text><text x="620" y="571" fill="#e8ecf3">8</text>
+  <text x="444" y="590" fill="#d6dae3">sitemap · structured-data</text><text x="660" y="590" fill="#e8ecf3">2</text>
+
+  <text x="24" y="622"><tspan fill="#565f73">[09:44:40]</tspan><tspan fill="#4ade80"> ✓</tspan><tspan fill="#d6dae3"> Audit completato. Issue salvate nel DB (tabella issues).</tspan></text>
+
+  <!-- $ report -->
+  <text x="24" y="660"><tspan fill="#4ade80">$</tspan><tspan fill="#e8ecf3" font-weight="bold"> seo-audit report</tspan><tspan fill="#565f73">   # → audit-report.json pronto per l'LLM</tspan><tspan fill="#4ade80">▊</tspan></text>
+</svg>
