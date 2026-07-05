@@ -1,0 +1,14 @@
+node_modules/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/latest.db
+audit-report.json
+storage/
+
+# Config reale (può contenere hostname di clienti / API key) — committa solo l'example
+audit.config.js
+audit.config.mjs
+audit.config.json
+
+.DS_Store
