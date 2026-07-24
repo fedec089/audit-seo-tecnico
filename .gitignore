@@ -12,3 +12,7 @@ audit.config.mjs
 audit.config.json
 
 .DS_Store
+
+# Materiale promozionale non destinato al repo pubblico
+articolo-blog.md
+docs/demo-linkedin.png

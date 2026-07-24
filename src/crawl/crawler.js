@@ -8,11 +8,47 @@ import { computeIndexability } from './indexability.js';
 import { collectSitemapUrls } from './sitemap.js';
 import { loadRobots } from './robots.js';
 import {
-  normalizeUrl, isInternal, isSameSite, isExcluded, compilePatterns,
+  normalizeUrl, isSameSite, hostOf, stripWww, isExcluded, compilePatterns,
 } from './url-utils.js';
 
 // Estensioni di asset da non accodare come pagine (evita di crawlare binari).
 const ASSET_RE = /\.(jpe?g|png|gif|webp|avif|svg|ico|css|js|mjs|json|pdf|zip|gz|rar|mp4|webm|mp3|wav|woff2?|ttf|eot|doc|docx|xls|xlsx|ppt|pptx)(\?|#|$)/i;
+
+// Risolve l'host canonico EFFETTIVO seguendo l'eventuale redirect della start
+// URL. Se la homepage reindirizza verso una variante www/non-www dello stesso
+// dominio, quella destinazione e' la fonte di verita' piu' affidabile: un host
+// canonico sbagliato (anche se dato esplicitamente via --host) scarterebbe in
+// blocco i seed della sitemap dichiarati sulla variante corretta. Adotta il
+// nuovo host SOLO se e' una variante www/non-www dello STESSO dominio: un
+// redirect verso un host del tutto diverso non va mai seguito automaticamente.
+async function resolveEffectiveHost(startUrl, canonicalHost, ua, timeoutMs) {
+  for (const method of ['HEAD', 'GET']) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(startUrl, {
+        method,
+        headers: { 'user-agent': ua },
+        redirect: 'follow',
+        signal: ctrl.signal,
+      });
+      clearTimeout(t);
+      try { await res.body?.cancel(); } catch { /* best effort */ }
+      // Alcuni server rifiutano HEAD (405): riprova con GET.
+      if (method === 'HEAD' && (res.status === 405 || res.status === 501)) continue;
+      const finalHost = hostOf(res.url);
+      if (finalHost && finalHost !== canonicalHost && stripWww(finalHost) === stripWww(canonicalHost)) {
+        return res.url;
+      }
+      return null;
+    } catch {
+      clearTimeout(t);
+      if (method === 'GET') return null;
+      // altrimenti riprova con GET
+    }
+  }
+  return null;
+}
 
 /**
  * Esegue il crawl completo e popola il database.
@@ -27,10 +63,23 @@ export async function runCrawl(config, { dbPath }) {
 
   const startUrl = normalizeUrl(config.startUrl);
   if (!startUrl) throw new Error(`startUrl non valido: ${config.startUrl}`);
-  const origin = new URL(startUrl).origin;
-  const canonicalHost = config.canonicalHost || new URL(startUrl).hostname.toLowerCase();
+  let origin = new URL(startUrl).origin;
+  let canonicalHost = config.canonicalHost || new URL(startUrl).hostname.toLowerCase();
   const excludeRes = compilePatterns(config.excludePatterns);
   const ua = config.userAgent;
+
+  // Se la start URL reindirizza verso una variante www/non-www dello stesso
+  // sito, quella e' l'host canonico vero: la adottiamo per l'intera sessione
+  // (seed sitemap inclusi), altrimenti una sitemap dichiarata sulla variante
+  // "giusta" ma diversa da --host verrebbe scartata in blocco.
+  const resolvedUrl = await resolveEffectiveHost(startUrl, canonicalHost, ua, config.timeoutMs);
+  if (resolvedUrl) {
+    const resolved = new URL(resolvedUrl);
+    logger.warn(`Host canonico corretto automaticamente: ${canonicalHost} -> ${resolved.hostname} ` +
+      "(la start URL reindirizza a questa variante). Uso quest'ultimo per l'intera sessione.");
+    canonicalHost = resolved.hostname.toLowerCase();
+    origin = resolved.origin;
+  }
 
   logger.info(`Host canonico: ${canonicalHost} | render=${config.render} | maxUrls=${config.maxUrls} maxDepth=${config.maxDepth}`);
 
@@ -81,8 +130,10 @@ export async function runCrawl(config, { dbPath }) {
     const u = normalizeUrl(raw);
     if (!u) continue;
     mark(u, { viaSitemap: true, depth: 0 });
-    // Accoda al crawl solo gli URL in scope (gli altri restano comunque dichiarati).
-    if (isInternal(u, canonicalHost, config.includeSubdomains)) {
+    // Accoda al crawl solo gli URL in scope. isSameSite (non isInternal): una
+    // sitemap dichiarata sulla variante www/non-www dell'host canonico non va
+    // scartata in blocco solo per una differenza di www.
+    if (isSameSite(u, canonicalHost, config.includeSubdomains)) {
       seedRequests.push({ url: u, userData: { depth: 0 } });
     }
   }
@@ -117,8 +168,8 @@ export async function runCrawl(config, { dbPath }) {
   let uncrawledInScope = 0;
   for (const [u, entry] of discovery.entries()) {
     if (crawledUrls.has(u)) continue;
-    // Conta solo gli URL interni in scope e non-asset (quelli che avremmo crawlato).
-    if (!isInternal(u, canonicalHost, config.includeSubdomains)) continue;
+    // Conta solo gli URL in scope (stesso criterio usato per accodare) e non-asset.
+    if (!isSameSite(u, canonicalHost, config.includeSubdomains)) continue;
     if (ASSET_RE.test(u)) continue;
     if (entry.viaLink && isExcluded(u, excludeRes)) continue;
     uncrawledInScope++;
@@ -162,7 +213,7 @@ export async function runCrawl(config, { dbPath }) {
 // Logica di gestione di una risposta, condivisa tra Cheerio e Playwright.
 // `html` puo' essere null (es. fetch fallita o risorsa non-HTML).
 // ---------------------------------------------------------------------------
-function handleResponse(sharedCtx, {
+async function handleResponse(sharedCtx, {
   requestUrl, finalUrl, statusCode, headers, html, responseTimeMs,
   redirects, depth, enqueue,
 }) {
@@ -192,9 +243,12 @@ function handleResponse(sharedCtx, {
       redirects: redirects.map((r) => ({ from: r.from, to: r.to, status: r.status })),
     });
     // Accoda la destinazione finale (sara' crawlata e salvata con il suo contenuto).
+    // L'await e' essenziale: senza, Crawlee puo' concludere "coda vuota" e
+    // chiudere il crawler prima che questa richiesta sia davvero scritta in coda.
     const finalNorm = normalizeUrl(finalUrl);
     if (finalNorm && finalNorm !== url) {
-      enqueueLink(finalNorm, url, depth, sharedCtx, enqueue);
+      const req = planEnqueue(finalNorm, url, depth, sharedCtx);
+      if (req) await enqueue([req]);
     }
     return;
   }
@@ -239,25 +293,34 @@ function handleResponse(sharedCtx, {
   });
   repo.savePage(record);
 
-  // Accoda i link interni non esclusi entro maxDepth.
+  // Accoda in un unico batch i link interni non esclusi entro maxDepth, e
+  // ATTENDI che la scrittura in coda sia completata prima di considerare
+  // questa richiesta conclusa: altrimenti Crawlee puo' chiudersi in anticipo
+  // (coda apparentemente vuota) se questa era l'ultima richiesta "in volo",
+  // perdendo tutte le pagine che si sarebbero dovute accodare da qui.
+  const toEnqueue = [];
   for (const link of record.links) {
     if (!link.is_internal) continue;
-    enqueueLink(link.href, url, depth, sharedCtx, enqueue);
+    const req = planEnqueue(link.href, url, depth, sharedCtx);
+    if (req) toEnqueue.push(req);
   }
+  if (toEnqueue.length) await enqueue(toEnqueue);
 }
 
-function enqueueLink(href, sourceUrl, depth, sharedCtx, enqueue) {
+// Decide se un href va accodato per il crawl (scope/depth/esclusioni) e
+// registra SEMPRE la provenienza via link, anche se poi non lo accodiamo.
+// Funzione pura (nessun I/O): ritorna la request da accodare, o null.
+function planEnqueue(href, sourceUrl, depth, sharedCtx) {
   const { mark, excludeRes, config, canonicalHost, includeSubdomains } = sharedCtx;
   const nextDepth = (depth ?? 0) + 1;
-  // Registra sempre la provenienza via link (anche se non lo accodiamo).
   mark(href, { viaLink: true, source: sourceUrl, depth: nextDepth });
   // Guardia di scope: mai accodare domini esterni (le varianti www/non-www
   // dell'host canonico invece si', servono al check alternate-host).
-  if (!isSameSite(href, canonicalHost, includeSubdomains)) return;
-  if (nextDepth > config.maxDepth) return;
-  if (ASSET_RE.test(href)) return;
-  if (isExcluded(href, excludeRes)) return;
-  enqueue({ url: href, userData: { depth: nextDepth } });
+  if (!isSameSite(href, canonicalHost, includeSubdomains)) return null;
+  if (nextDepth > config.maxDepth) return null;
+  if (ASSET_RE.test(href)) return null;
+  if (isExcluded(href, excludeRes)) return null;
+  return { url: href, userData: { depth: nextDepth } };
 }
 
 // ---------------------------------------------------------------------------
@@ -311,7 +374,7 @@ function buildCheerioCrawler(sharedCtx, ua) {
 
       log.info(`${statusCode} (${responseTimeMs ?? '?'}ms) d${depth} ${request.url}`);
 
-      handleResponse(sharedCtx, {
+      await handleResponse(sharedCtx, {
         requestUrl: request.url,
         finalUrl: request.loadedUrl || request.url,
         statusCode,
@@ -320,7 +383,7 @@ function buildCheerioCrawler(sharedCtx, ua) {
         responseTimeMs,
         redirects,
         depth,
-        enqueue: (req) => addRequests([req]),
+        enqueue: (reqs) => addRequests(reqs),
       });
     },
     failedRequestHandler({ request, response, log }, error) {
@@ -361,7 +424,7 @@ async function buildPlaywrightCrawler(sharedCtx) {
       const html = await page.content();
       log.info(`${status} d${depth} ${request.url}`);
 
-      handleResponse(sharedCtx, {
+      await handleResponse(sharedCtx, {
         requestUrl: request.url,
         finalUrl,
         statusCode: status,
@@ -370,7 +433,7 @@ async function buildPlaywrightCrawler(sharedCtx) {
         responseTimeMs: null,
         redirects,
         depth,
-        enqueue: (req) => addRequests([req]),
+        enqueue: (reqs) => addRequests(reqs),
       });
     },
     failedRequestHandler({ request, response, log }, error) {
